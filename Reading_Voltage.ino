@@ -6,7 +6,7 @@
 // Set the correction offset value, change as needed
 int offset = 20;
 
-// Name analog pins. Add/subtract variables based on nunmber of used analog pins
+// Name analog pins. Add/remove variables based on nunmber of used analog pins
 char analog0 = A0;
 char analog1 = A1;
 char analog2 = A2;
@@ -40,13 +40,13 @@ void read_and_print_voltage(int volt, char pin_num) {
 
 void loop() {
   
-  // Read analog pins A0-A3. Add/subtract variables based on nunmber of used analog pins
+  // Read analog pins A0-A3. Add/remove variables based on nunmber of used analog pins
   int volt0 = analogRead(A0);
   int volt1 = analogRead(A1);
   int volt2 = analogRead(A2);
   int volt3 = analogRead(A3);
 
-  // Read and print voltage values for each specified analog pin
+  // Read and print voltage values for each specified analog pin. Add/remove function calls based on nunmber of used analog pins
   read_and_print_voltage(volt0, analog0);
   read_and_print_voltage(volt1, analog1);
   read_and_print_voltage(volt2, analog2);
