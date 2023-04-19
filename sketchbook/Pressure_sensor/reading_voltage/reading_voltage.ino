@@ -2,7 +2,6 @@
   Will Bradford
   Children's Prosthetics 2022-24
   Read and output weight values from pressure sensors
-  Last edited 04/04/23
 */
 
 
