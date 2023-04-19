@@ -5,8 +5,6 @@
   Last edited 04/04/23
 */
 
-// Set the calibration factor, change as needed
-float cf = 19.5;
 
 // Name sensors that are being used. Add or comment/uncomment variables based on number of used sensors
 char sensor1[] = "Sensor 1";
@@ -26,19 +24,13 @@ float measureWeight(char* sensorNum, int pinNum) {
   sensorData = analogRead(pinNum);
   
   // Calculate voltage
-  vout = (sensorData * 5.0) / 1023.0;
-
-  // Multiply by calibration factor to get final weight value (kg)
-  vout *= cf;
-
-  //Subtract to get to ~0 when no load applied
-  vout -= 14;
+  vout = (sensorData * 3.3) / 1023.0;
 
   // Print weight to serial monitor
   Serial.print(sensorNum);
   Serial.print(" reads: ");
   Serial.print(vout, 3);
-  Serial.println(" kg");
+  Serial.println(" V");
 
   return vout;
 
