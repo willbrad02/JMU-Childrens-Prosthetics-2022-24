@@ -1,0 +1,125 @@
+/*
+  Arduino LSM9DS1 - Gyroscope Application
+
+  This example reads the gyroscope values from the LSM9DS1 sensor 
+  and prints them to the Serial Monitor or Serial Plotter, as a directional detection of 
+  an axis' angular velocity.
+
+  The circuit:
+  - Arduino Nano 33 BLE Sense
+
+  Created by Riccardo Rizzo
+
+  Modified by Benjamin Dannegård
+  30 Nov 2020
+
+  Modified by Will Bradford to work with BMI270 IMU
+  17 Nov 2023
+
+  This example code is in the public domain.
+*/
+
+#include <Arduino_BMI270_BMM150.h>
+
+///***Variables created to do calculations for the steps***\\\
+
+float x, y, z; // X, Y, Z axis
+const int N = 10; // The "Moving Average" Range
+int mag[N]; // The "Magnitude of each data point"
+int idx = 0; // Placeholder variable
+int diff[N]; // The Difference between 2 magnitudes
+int sqr[N]; // Magnifying each data point to detect the large movement
+const int AVG_LEN = 80;
+int avg[AVG_LEN];
+int lower_bound = 3000; //Bounds to only allow readings of steps must be between this values
+int upper_bound = 7000;
+
+float sum = 0;
+int steps = 0;
+int pause = 0;
+
+long timeAcquire = 0;
+long timeProcess = 0;
+long timeDecide = 0;
+long algorithmDone = 0;
+
+
+void setup() {
+  Serial.begin(9600);
+  while (!Serial);
+  Serial.println("Started");
+
+  if (!IMU.begin()) {
+    Serial.println("Failed to initialize IMU!");
+    while (1);
+  }
+  Serial.print("Gyroscope sample rate = ");
+  Serial.print(IMU.gyroscopeSampleRate());
+  Serial.println(" Hz");
+  Serial.println();
+  Serial.println("Gyroscope in degrees/second");
+}
+void loop() {
+  
+  if (IMU.gyroscopeAvailable()) {
+    IMU.readGyroscope(x, y, z);
+  }
+  ///Calculations to detect the major changes in the movement\\\
+  
+  mag[idx % N] = sqrt((x * x) + (y * y) + (z * z)); // Calculates Magnitude
+  diff[idx % N] = mag[idx % N] - mag[(idx - 1) % N]; // Calculates Difference
+  sqr[idx % N] = diff[idx % N] * diff[idx % N]; // Calculates Difference
+  //Serial.println(sqr[idx % N]);
+  //delay(500);
+
+  ///"Smoothing out" calculations\\\
+
+  if (idx > 10) // Index based on moving average
+  {
+    double temp = 0; //temporary value,required to make the code more smooth
+
+
+    for (int i = 0; i < 10; i++) // for loop to find the average
+    {
+      temp += sqr[(idx - N + i) % N];
+    }
+    avg[idx%AVG_LEN] = temp / N;
+    //cout << "Average: " << avg[idx] ; // displays the average
+  }
+
+
+  //Creating bounds so that when you take a step it will read a step
+  if ((avg[idx%AVG_LEN] >= lower_bound) && (avg[idx%AVG_LEN] <= upper_bound))
+  {
+    if (idx >= pause + 20) // pause when counting steps so that that when reading the data, it won't just crash
+    {
+      steps++; //add step
+      pause = idx;
+    }
+
+
+  }
+
+  //cout << step << endl;  //display steps
+  idx++;
+
+  //calculate how long the acquire() took
+  long time_to_acquire = timeProcess - timeAcquire;
+
+  //calculate how long the processs() took
+  long time_to_process = timeProcess - timeDecide;
+
+  //calculate how long the decide() took
+  long time_to_decide = timeDecide - algorithmDone;
+
+  //print all back to host PC
+
+  Serial.print(mag[idx % N]);
+  Serial.print(",");
+  Serial.print(avg[idx%AVG_LEN]);
+  Serial.print(",");
+  Serial.print("total steps " );
+  Serial.println(steps); //print back the magnitude for fun so we can see if the calculation was done correctly.
+  delay(10);
+  return;
+}
