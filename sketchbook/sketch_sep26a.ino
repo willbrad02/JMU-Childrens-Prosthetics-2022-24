@@ -8,8 +8,11 @@
 //Placeholder Values and imports that must be before the code
 #include <Arduino_BMI270_BMM150.h>
 #include <iostream>
-#include <fstream>
-#include <ctime> // Time Library
+#include <fstream> // Include the necessary header for file operations
+#include <vector>
+#include <string>
+#include <ctime>
+
 
 using namespace std;
 
@@ -43,6 +46,17 @@ int mag_p0[N]; // The "Magnitude of pressure sensor 0"
 int idx_p0 = 0; // Placeholder variable
 int diff_p0[N]; // The Difference between 2 magnitudes
 int sqr_p0[N]; // Magnifying each data point to detect the large movement
+int avg_p0[AVG_LEN];
+
+// Define a custom class to hold data
+class PressureSensor0Data {
+public:
+    std::string date;
+    double results;
+    PressureSensor0Data(const std::string& d, double r, double a)
+        : date(d), results(r), analysis(a) {}
+};
+
 
 /// Detect the step
 
@@ -76,6 +90,32 @@ void loop()
 // Gyroscope Verification
 void step_detect()
 {
+  time_t now = time(0);
+    struct tm timeinfo;
+    localtime_s(&timeinfo, &now); // Platform-specific function to get local time
+
+    // Extract and display date and time components
+    int year = 1900 + timeinfo.tm_year;
+    int month = 1 + timeinfo.tm_mon;
+    int day = timeinfo.tm_mday;
+    int hour = timeinfo.tm_hour;
+    int minute = timeinfo.tm_min;
+    int second = timeinfo.tm_sec;
+
+    std::string dash_date = "/";
+    std::string colon_date = ":";
+
+    // Convert the number to a string and concatenate it with the text
+    std::string current_time_and_date = std::to_string(month) + dash_date +
+        std::to_string(day) + dash_date +
+        std::to_string(year) + dash_date + " " +
+        std::to_string(hour) + colon_date +
+        std::to_string(minute) + colon_date +
+        std::to_string(second);
+
+    std::cout << current_time_and_date << std::endl;
+
+
     int lower_bound = 3000; //Bounds to only allow readings of steps must be between this values
     int upper_bound = 7000;
 
@@ -167,9 +207,9 @@ void step_detect()
         {
             temp += sqr_p0[(idx_p0 - N + i) % N];
         }
-        avg[idx_p0 % AVG_LEN] = temp / N;
-        //cout << "Average: " << avg[idx] ; // displays the average
+        avg_p0[idx_p0 % AVG_LEN] = temp / N;
     }
+
   Serial.print( "  Sensor 0 Force (N): " );
   Serial.print( sensorZero );
 
@@ -184,9 +224,33 @@ void step_detect()
   Serial.print(",");
   Serial.print(mag_p0[idx_p0 % N]);
   Serial.print(",");
-  Serial.print(avg_p0[idx_p0%AVG_LEN]);
+  Serial.print(avg_p0[idx_p0 % AVG_LEN]);
+
+
+  std::vector<PressureSensor0Data> data; // Store multiple instances of data
+  // Add data to the vector, repeat every time
+  data.push_back(PressureSensor0Data(current_time_and_date, sensorZero, avg_p0[idx_p0 % AVG_LEN])); //Have the date, pressure value, and reading value in here
+
+  // Specify the file name for output
+    const std::string fileName = "sensor_data.txt";
+
+    // Open the file for writing
+    std::ofstream outFile(fileName);
+
+    // Check if the file is open and write data to it
+    if (outFile.is_open()) {
+        for (const PressureSensor0Data& entry : data) {
+            // Write each data entry to the file
+            outFile << "Date: " << entry.date << ", Results: " << entry.results << ", Analysis: " << entry.analysis << std::endl;
+        }
+
+        // Close the file
+        outFile.close();
+        std::cout << "Data exported to " << fileName << std::endl;
+    } else {
+        std::cerr << "Failed to open file for writing." << std::endl;
+    }
+
 
     idx++;
 }
-
- 
